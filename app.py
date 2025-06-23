@@ -17,26 +17,26 @@ from io import BytesIO
 # 2. KONFIGURASI HALAMAN
 # =====================
 st.set_page_config(
-    page_title="Deteksi Katarak",
-    page_icon="👁️",
+    page_title="Deteksi OSCC",
+    page_icon="🦷",
     layout="centered"
 )
 
 # =====================
 # 3. FUNGSI UTAMA
 # =====================
-# Fungsi untuk mengunduh model
+# Unduh model dari Google Drive jika belum ada
 def download_model():
-    model_path = 'model/final_model_100.h5'
+    model_path = 'model/model_resnet152.h5'
     if not os.path.exists(model_path):
         os.makedirs('model', exist_ok=True)
-        url = 'https://drive.google.com/uc?id=1dAQvcVqh-THln51V_lamzlTBrFHsxmwe'
+        url = 'https://drive.google.com/uc?id=1V50_7ykS-jVoFOCjX1MSrLBMpqfBQJgS'
         gdown.download(url, model_path, quiet=False)
     return model_path
 
-# Fungsi untuk memuat model
+# Load model sekali saja
 @st.cache_resource
-def load_eye_model():
+def load_oscc_model():
     try:
         model_path = download_model()
         model = load_model(model_path)
@@ -45,35 +45,32 @@ def load_eye_model():
         st.error(f"Gagal memuat model: {str(e)}")
         return None
 
-# Fungsi untuk prediksi
-def predict_eye(image):
+# Prediksi hasil OSCC
+def predict_oscc(image):
     img = Image.open(image).convert('RGB')
     img = img.resize((224, 224))
     img_array = img_to_array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
     prediction = model.predict(img_array)
     probability = prediction[0][0]
-    return ("NORMAL", float(probability)) if probability > 0.5 else ("KATARAK", float(1 - probability))
+    return ("KANKER (OSCC)", float(probability)) if probability > 0.5 else ("NORMAL", float(1 - probability))
 
 # =====================
 # 4. LOAD MODEL
 # =====================
-model = load_eye_model()
+model = load_oscc_model()
 if model is None:
     st.stop()
 
 # =====================
 # 5. UI UTAMA
 # =====================
-# Judul Aplikasi
-st.markdown("<h1 style='text-align: center;'>Deteksi Katarak</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>Unggah gambar mata untuk memeriksa apakah terdapat katarak</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>Deteksi Oral Squamous Cell Carcinoma (OSCC)</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Unggah gambar mukosa oral untuk memeriksa apakah terdapat kanker</p>", unsafe_allow_html=True)
 
-# Upload gambar
-uploaded_file = st.file_uploader("Pilih gambar mata...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Pilih gambar OSCC atau Normal...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
-    # Tampilkan gambar yang diupload
     image = Image.open(uploaded_file)
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
@@ -89,28 +86,25 @@ if uploaded_file:
             unsafe_allow_html=True
         )
 
-    # Lakukan prediksi
     with st.spinner('Menganalisis...'):
-        label, confidence = predict_eye(uploaded_file)
+        label, confidence = predict_oscc(uploaded_file)
         time.sleep(1)
 
     st.success('Analisis selesai!')
 
-    # Tampilkan hasil
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Hasil", label)
     with col2:
         st.metric("Tingkat Kepercayaan", f"{confidence*100:.2f}%")
 
-    # Saran berdasarkan hasil
-    if label == "KATARAK":
-        st.warning("Terdeteksi kemungkinan katarak. Silakan konsultasi dengan dokter spesialis mata.")
+    if label == "KANKER (OSCC)":
+        st.warning("Terdeteksi kemungkinan OSCC. Disarankan segera konsultasi dengan dokter spesialis.")
     else:
-        st.info("Tidak terdeteksi katarak. Tetap jaga kesehatan mata dengan pemeriksaan rutin.")
+        st.info("Tidak terdeteksi kanker. Tetap periksa secara berkala untuk deteksi dini.")
 
 # =====================
-# 6. CSS GLOBAL
+# 6. CSS RESPONSIF
 # =====================
 st.markdown(
     """
@@ -130,4 +124,4 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True
-) 
+)
