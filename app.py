@@ -19,7 +19,7 @@ import json # Kembali diperlukan untuk logging atau debugging tambahan jika dipe
 MODEL_DIR = "model"
 MODEL_FILE = "model_resnet152_bs8.keras"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/raw/main/model_resnet152_bs8.keras"
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
 
 
 # =====================
