@@ -1,39 +1,76 @@
+# =====================
+# 1. IMPORT LIBRARY
+# =====================
 import streamlit as st
+from PIL import Image
+import numpy as np
 import tensorflow as tf
+from tensorflow.keras.models import load_model, model_from_json
+from tensorflow.keras.preprocessing.image import img_to_array
+import time
 import os
 import requests
+import base64
+from io import BytesIO
+import h5py
+import json
 
-# ====================
-# 1. Download Model
-# ====================
-@st.cache_resource
+# =====================
+# 2. KONFIGURASI MODEL
+# =====================
+MODEL_DIR = "model"
+MODEL_FILE = "model_resnet152.h5"
+MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
+
+
+# =====================
+# 3. UNDUH MODEL
+# =====================
 def download_model():
-    url = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152.h5"
-    local_path = "model_resnet152.h5"
+    if not os.path.exists(MODEL_PATH):
+        st.warning("🔁 Mengunduh model dari Hugging Face...")
+        os.makedirs(MODEL_DIR, exist_ok=True)
+        response = requests.get(MODEL_URL, stream=True)
+        with open(MODEL_PATH, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+    return MODEL_PATH
 
-    if not os.path.exists(local_path):
-        with st.spinner("Mengunduh model..."):
-            response = requests.get(url, stream=True)
-            if response.status_code == 200:
-                with open(local_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-            else:
-                st.error(f"Gagal mengunduh model: {response.status_code}")
-                raise Exception("Download model gagal")
+# =====================
+# 4. LOAD MODEL DENGAN FIX
+# =====================
+def load_custom_model(h5_path):
+    with h5py.File(h5_path, "r") as f:
+        model_config = f.attrs.get("model_config")
+        if model_config is None:
+            raise ValueError("Model config is missing in HDF5 file.")
+        
+        if isinstance(model_config, bytes):
+            model_config = model_config.decode("utf-8")
+        
+        model_json = json.loads(model_config)
 
-    return local_path
+        # Hapus batch_shape & batch_input_shape
+        for layer in model_json["config"]["layers"]:
+            layer_config = layer["config"]
+            layer_config.pop("batch_input_shape", None)
+            layer_config.pop("batch_shape", None)
 
-# ====================
-# 2. Load Model
-# ====================
-@st.cache_resource
-def load_custom_model():
-    model_path = download_model()
-    return tf.keras.models.load_model(model_path)
+        # Hapus juga field di model config level atas (opsional tapi aman)
+        model_json["config"].pop("batch_input_shape", None)
 
-# Inisialisasi Model
-model = load_custom_model()
+        cleaned_model_config = json.dumps(model_json)
+
+    try:
+        model = model_from_json(cleaned_model_config)
+    except ValueError as e:
+        st.error("Model error: Kemungkinan format .h5 tidak sepenuhnya kompatibel dengan deserializer JSON.")
+        raise e
+
+    model.load_weights(h5_path)
+    return model
 
 
 
