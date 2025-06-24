@@ -151,7 +151,11 @@ if uploaded_file:
     st.write("") # Memberi spasi kosong untuk tampilan yang lebih rapi
 
     # --- Bagian untuk meratakan tombol "Lakukan Deteksi" ---
-    col_left_btn, col_center_btn, col_right_btn = st.columns([1, 1, 1])
+    # Menggunakan rasio kolom yang berbeda untuk memaksa tombol terlihat lebih di tengah
+    # [spasi_kiri_kosong, kolom_untuk_tombol, spasi_kanan_kosong]
+    # Rasio [3, 2, 3] akan memberikan ruang kosong yang lebih besar di samping,
+    # membuat kolom tengah relatif lebih sempit dan tombol terlihat di tengah.
+    col_left_btn, col_center_btn, col_right_btn = st.columns([3, 2, 3])
     with col_center_btn:
         run_detection = st.button("Lakukan Deteksi")
 
@@ -162,8 +166,7 @@ if uploaded_file:
 
         st.write("") # Spasi kosong sebelum hasil
         
-        # --- Bagian untuk meratakan subheader dan hasil deteksi ---
-        # Menggunakan st.markdown dengan HTML/CSS untuk rata tengah semua teks
+        # --- Bagian untuk meratakan subheader dan hasil deteksi (sudah pakai markdown untuk center) ---
         st.markdown("<h3 style='text-align: center;'>Hasil Deteksi:</h3>", unsafe_allow_html=True)
         
         if label == "KANKER (OSCC)":
@@ -173,7 +176,7 @@ if uploaded_file:
         else:
             st.markdown(f"<div style='text-align: center; color: green; font-weight: bold;'>✅ TERDETEKSI: {label}</div>", unsafe_allow_html=True)
             st.markdown(f"<div style='text-align: center;'>Tingkat Keyakinan: <b>{confidence*100:.2f}%</b></div>", unsafe_allow_html=True)
-            st.markdown("<div style='text-align: center; color: gray; font-size: small;'>Penting: Terus lakukan pemeriksaan rutin dan jaga kesehatan mulut.</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center; color: gray; font-size: small;'>Penting: Terus lakukan pemeriksaan rutin dan jaga kesehatan mulut.<div/>", unsafe_allow_html=True) # Tambah penutup div
 
 # Informasi disclaimer di bagian bawah aplikasi
 st.markdown("---")
