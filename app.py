@@ -27,7 +27,7 @@ st.set_page_config(
 # =====================
 # Unduh model dari Google Drive jika belum ada
 def download_model():
-    model_path = 'model/model_resnet152.h5'
+    model_path = '/test_resnet152/best model/model_resnet152.h5'
     if not os.path.exists(model_path):
         os.makedirs('model', exist_ok=True)
         url = 'https://drive.google.com/file/d/1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII/view?usp=sharing'
