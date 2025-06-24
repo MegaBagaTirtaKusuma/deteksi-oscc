@@ -52,13 +52,11 @@ def load_custom_model(h5_path):
         
         model_json = json.loads(model_config)
 
-        # Hapus batch_shape & batch_input_shape
         for layer in model_json["config"]["layers"]:
             layer_config = layer["config"]
             layer_config.pop("batch_input_shape", None)
             layer_config.pop("batch_shape", None)
 
-        # Hapus juga field di model config level atas (opsional tapi aman)
         model_json["config"].pop("batch_input_shape", None)
 
         cleaned_model_config = json.dumps(model_json)
@@ -71,6 +69,10 @@ def load_custom_model(h5_path):
 
     model.load_weights(h5_path)
     return model
+
+# ⬅️ INI DITAMBAHKAN
+model = load_custom_model(download_model())
+
 
 
 
