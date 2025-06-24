@@ -5,21 +5,19 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model, model_from_json
+from tensorflow.keras.models import load_model # load_model is sufficient for .keras or .h5
 from tensorflow.keras.preprocessing.image import img_to_array
 import time
 import os
 import requests
 import base64
 from io import BytesIO
-import h5py
-import json
 
 # =====================
 # 2. KONFIGURASI MODEL
 # =====================
 MODEL_DIR = "model"
-MODEL_FILE = "model_resnet152.h5"
+MODEL_FILE = "model_resnet152_bs8.keras" # Sesuaikan nama file model yang sebenarnya
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
 
@@ -27,58 +25,63 @@ MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resn
 # =====================
 # 3. UNDUH MODEL
 # =====================
+# @st.cache_resource will cache the result of this function,
+# so the model is downloaded only once.
+@st.cache_resource
 def download_model():
+    st.info("🔁 Memeriksa dan mengunduh model... Ini mungkin memerlukan waktu beberapa saat pada pertama kali.")
     if not os.path.exists(MODEL_PATH):
-        st.warning("🔁 Mengunduh model dari Hugging Face...")
         os.makedirs(MODEL_DIR, exist_ok=True)
-        response = requests.get(MODEL_URL, stream=True)
-        with open(MODEL_PATH, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
+        try:
+            response = requests.get(MODEL_URL, stream=True)
+            response.raise_for_status() # Akan menaikkan HTTPError untuk kode status respons yang buruk (4xx atau 5xx)
+            with open(MODEL_PATH, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            st.success("✅ Model berhasil diunduh!")
+        except requests.exceptions.RequestException as e:
+            st.error(f"❌ Gagal mengunduh model: {e}. Pastikan URL benar dan ada koneksi internet.")
+            return None # Mengembalikan None jika unduhan gagal
+    else:
+        st.success("Model sudah tersedia secara lokal.")
     return MODEL_PATH
 
 # =====================
-# 4. LOAD MODEL DENGAN FIX
+# 4. LOAD MODEL DENGAN FIX (Menggunakan tf.keras.models.load_model)
 # =====================
-def load_custom_model(h5_path):
-    with h5py.File(h5_path, "r") as f:
-        model_config = f.attrs.get("model_config")
-        if model_config is None:
-            raise ValueError("Model config is missing in HDF5 file.")
-        
-        if isinstance(model_config, bytes):
-            model_config = model_config.decode("utf-8")
-        
-        model_json = json.loads(model_config)
+# @st.cache_resource will cache the model object itself,
+# so it's loaded into memory only once.
+@st.cache_resource
+def load_and_cache_model(model_path):
+    if model_path is None: # Jika path model tidak valid (misal, karena unduhan gagal)
+        st.error("Tidak dapat memuat model karena file model tidak ditemukan atau unduhan gagal.")
+        return None
 
-        # Hapus batch_shape & batch_input_shape
-        for layer in model_json["config"]["layers"]:
-            layer_config = layer["config"]
-            layer_config.pop("batch_input_shape", None)
-            layer_config.pop("batch_shape", None)
-
-        # Hapus juga field di model config level atas (opsional tapi aman)
-        model_json["config"].pop("batch_input_shape", None)
-
-        cleaned_model_config = json.dumps(model_json)
-
+    st.info("🧠 Memuat model... ini mungkin memerlukan waktu beberapa detik.")
     try:
-        model = model_from_json(cleaned_model_config)
-    except ValueError as e:
-        st.error("Model error: Kemungkinan format .h5 tidak sepenuhnya kompatibel dengan deserializer JSON.")
-        raise e
+        # tf.keras.models.load_model dapat memuat format .keras dan .h5
+        model = tf.keras.models.load_model(model_path)
+        st.success("✅ Model berhasil dimuat!")
+        return model
+    except Exception as e:
+        st.error(f"❌ Gagal memuat model: {e}")
+        st.error("Pastikan file model tidak rusak dan kompatibel dengan versi TensorFlow Anda. Coba hapus folder 'model' dan jalankan ulang.")
+        return None # Mengembalikan None jika pemuatan gagal
 
-    model.load_weights(h5_path)
-    return model
-
-
+# --- GLOBAL MODEL LOADING ---
+# Kode ini akan dieksekusi sekali saat aplikasi dimulai.
+# Variabel 'model' akan berisi objek model atau None jika terjadi kegagalan.
+downloaded_model_path = download_model()
+model = load_and_cache_model(downloaded_model_path)
 
 
 # =====================
 # 5. FUNGSI PREDIKSI
 # =====================
 def predict_oscc(image):
+    # 'model' sudah didefinisikan secara global dan dimuat pada titik ini
+    # Tidak perlu memeriksa model di sini, karena sudah diperiksa di bagian UI utama.
     img = Image.open(image).convert('RGB')
     img = img.resize((224, 224))
     img_array = img_to_array(img) / 255.0
@@ -96,6 +99,11 @@ st.markdown("<p style='text-align: center;'>Unggah gambar mukosa oral untuk meme
 uploaded_file = st.file_uploader("Pilih gambar OSCC atau Normal...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
+    # --- Tambahkan pemeriksaan ini sebelum memanggil predict_oscc ---
+    if model is None:
+        st.error("Tidak dapat melanjutkan prediksi karena model tidak berhasil dimuat. Silakan coba muat ulang aplikasi atau periksa koneksi internet.")
+        st.stop() # Hentikan eksekusi lebih lanjut jika model tidak ada
+
     image = Image.open(uploaded_file)
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
@@ -113,7 +121,7 @@ if uploaded_file:
 
     with st.spinner('🧠 Menganalisis...'):
         label, confidence = predict_oscc(uploaded_file)
-        time.sleep(1)
+        time.sleep(1) # Simulasi waktu analisis
 
     st.success('✅ Analisis selesai!')
 
