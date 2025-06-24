@@ -15,7 +15,7 @@ import requests # Untuk mengunduh dari URL
 # 2. KONFIGURASI MODEL
 # =====================
 MODEL_DIR = "model" # Folder untuk menyimpan model yang diunduh
-MODEL_FILE = "model_resnet152.keras" # Nama file model setelah diunduh (pastikan ekstensi .keras)
+MODEL_FILE = "model_resnet152_bs32.keras" # Nama file model setelah diunduh (pastikan ekstensi .keras)
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 
 # --- KONFIGURASI GOOGLE DRIVE UNTUK FILE .KERAS ---
