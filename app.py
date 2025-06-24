@@ -29,8 +29,11 @@ def download_model():
     if not os.path.exists(MODEL_PATH):
         st.warning("🔁 Mengunduh model dari Google Drive...")
         os.makedirs(MODEL_DIR, exist_ok=True)
-        gdown.download(GDRIVE_URL, MODEL_PATH, quiet=False)
+        file_id = "1yk3Fpx9cHU6OVkUga_8entgR_keXo6CU"
+        gdown.download(id=file_id, output=MODEL_PATH, quiet=False)
+        
     return MODEL_PATH
+
 
 # =====================
 # 4. LOAD MODEL
