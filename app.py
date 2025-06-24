@@ -59,7 +59,6 @@ def load_and_cache_model(model_path):
         st.error("Tidak dapat memuat model karena file model tidak ditemukan atau unduhan gagal.")
         return None
 
-    st.info("🧠 Memuat model... ini mungkin memerlukan waktu beberapa detik.")
     try:
         # tf.keras.models.load_model dapat memuat format .keras dan .h5
         model = tf.keras.models.load_model(model_path)
