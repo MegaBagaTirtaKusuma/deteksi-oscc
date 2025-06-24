@@ -5,13 +5,15 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model, model_from_json
 from tensorflow.keras.preprocessing.image import img_to_array
 import time
 import os
 import requests
 import base64
 from io import BytesIO
+import h5py
+import json
 
 # =====================
 # 2. KONFIGURASI MODEL
@@ -38,17 +40,12 @@ def download_model():
 # =====================
 # 4. LOAD MODEL DENGAN FIX
 # =====================
-import h5py
-import json
-from tensorflow.keras.models import model_from_json
-
 def load_custom_model(h5_path):
     with h5py.File(h5_path, "r") as f:
         model_config = f.attrs.get("model_config")
         if model_config is None:
             raise ValueError("Model config is missing in HDF5 file.")
         
-        # decode jika byte, kalau str langsung aja
         if isinstance(model_config, bytes):
             model_config = model_config.decode("utf-8")
         elif isinstance(model_config, str):
@@ -56,12 +53,10 @@ def load_custom_model(h5_path):
         
         model_json = json.loads(model_config)
 
-        # Hilangkan batch_input_shape dan batch_shape dari semua layer
+        # Hapus batch_input_shape & batch_shape
         for layer in model_json['config']['layers']:
-            if 'batch_input_shape' in layer['config']:
-                layer['config'].pop('batch_input_shape', None)
-            if 'batch_shape' in layer['config']:
-                layer['config'].pop('batch_shape', None)
+            layer['config'].pop('batch_input_shape', None)
+            layer['config'].pop('batch_shape', None)
 
         cleaned_model_config = json.dumps(model_json)
 
@@ -69,6 +64,11 @@ def load_custom_model(h5_path):
     model.load_weights(h5_path)
     return model
 
+@st.cache_resource
+def get_model():
+    return load_custom_model(download_model())
+
+model = get_model()
 
 # =====================
 # 5. FUNGSI PREDIKSI
