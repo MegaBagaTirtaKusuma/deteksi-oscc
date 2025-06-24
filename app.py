@@ -24,8 +24,9 @@ if not os.path.exists(model_path):
 
     # Ganti dengan ID file dari Google Drive lo
 file_id = "1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII"
-url = f"https://drive.google.com/uc?id={file_id}"
-gdown.download(url, model_path, quiet=False)
+url = "https://drive.google.com/file/d/1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII/view?usp=sharing"
+output = "model_resnet152.h5"
+gdown.download(url, output, quiet=False, fuzzy=True)
 
 
 # =====================
