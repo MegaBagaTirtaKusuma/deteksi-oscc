@@ -76,7 +76,8 @@ def load_custom_model(h5_path):
 # =====================
 # 5. FUNGSI PREDIKSI
 # =====================
-def predict_oscc(image):
+# Ubah definisi fungsi ini untuk menerima 'model' sebagai argumen
+def predict_oscc(image, model):
     img = Image.open(image).convert('RGB')
     img = img.resize((224, 224))
     img_array = img_to_array(img) / 255.0
@@ -90,6 +91,15 @@ def predict_oscc(image):
 # =====================
 st.markdown("<h1 style='text-align: center;'>Deteksi Oral Squamous Cell Carcinoma (OSCC)</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Unggah gambar mukosa oral untuk memeriksa apakah terdapat kanker</p>", unsafe_allow_html=True)
+
+# Unduh dan muat model sekali saja menggunakan st.cache_resource
+@st.cache_resource
+def get_model():
+    model_path = download_model()
+    model = load_custom_model(model_path) # Pastikan model_path dilewatkan di sini
+    return model
+
+model = get_model() # Muat model di awal aplikasi
 
 uploaded_file = st.file_uploader("Pilih gambar OSCC atau Normal...", type=["jpg", "jpeg", "png"])
 
@@ -110,6 +120,7 @@ if uploaded_file:
         )
 
     with st.spinner('🧠 Menganalisis...'):
+        # Lewatkan objek 'model' ke fungsi predict_oscc
         label, confidence = predict_oscc(uploaded_file, model)
         time.sleep(1)
 
