@@ -145,30 +145,35 @@ uploaded_file = st.file_uploader("Pilih gambar mukosa oral...", type=["jpg", "jp
 
 if uploaded_file:
     # Tampilkan gambar yang diunggah di tengah kolom
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        st.image(uploaded_file, caption='Gambar yang Diunggah', use_container_width=True) # Menggunakan use_container_width
+    col1_img, col2_img, col3_img = st.columns([1,2,1])
+    with col2_img:
+        st.image(uploaded_file, caption='Gambar yang Diunggah', use_container_width=True)
     st.write("") # Memberi spasi kosong untuk tampilan yang lebih rapi
 
     # --- Bagian untuk meratakan tombol "Lakukan Deteksi" ---
-    col_left_button, col_center_button, col_right_button = st.columns([1, 1, 1])
-    with col_center_button:
-        if st.button("Lakukan Deteksi"):
-            with st.spinner('Menganalisis gambar...'):
-                # Panggil fungsi prediksi
-                label, confidence = predict_oscc(uploaded_file)
-                time.sleep(1) # Memberi sedikit jeda agar animasi spinner terlihat
+    col_left_btn, col_center_btn, col_right_btn = st.columns([1, 1, 1])
+    with col_center_btn:
+        run_detection = st.button("Lakukan Deteksi")
 
-            # --- Bagian untuk meratakan hasil deteksi ---
-            st.subheader("Hasil Deteksi:")
-            if label == "KANKER (OSCC)":
-                st.error(f"⚠️ **TERDETEKSI: {label}**")
-                st.write(f"Tingkat Keyakinan: **{confidence*100:.2f}%**")
-                st.info("⚠️ Penting: Hasil ini adalah perkiraan. Selalu konsultasikan dengan profesional medis untuk diagnosa dan penanganan yang akurat.")
-            else:
-                st.success(f"✅ **TERDETEKSI: {label}**")
-                st.write(f"Tingkat Keyakinan: **{confidence*100:.2f}%**")
-                st.info("Penting: Terus lakukan pemeriksaan rutin dan jaga kesehatan mulut.")
+    if run_detection:
+        with st.spinner('Menganalisis gambar...'):
+            label, confidence = predict_oscc(uploaded_file)
+            time.sleep(1)
+
+        st.write("") # Spasi kosong sebelum hasil
+        
+        # --- Bagian untuk meratakan subheader dan hasil deteksi ---
+        # Menggunakan st.markdown dengan HTML/CSS untuk rata tengah semua teks
+        st.markdown("<h3 style='text-align: center;'>Hasil Deteksi:</h3>", unsafe_allow_html=True)
+        
+        if label == "KANKER (OSCC)":
+            st.markdown(f"<div style='text-align: center; color: red; font-weight: bold;'>⚠️ TERDETEKSI: {label}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: center;'>Tingkat Keyakinan: <b>{confidence*100:.2f}%</b></div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center; color: orange; font-size: small;'>⚠️ Penting: Hasil ini adalah perkiraan. Selalu konsultasikan dengan profesional medis untuk diagnosa dan penanganan yang akurat.</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div style='text-align: center; color: green; font-weight: bold;'>✅ TERDETEKSI: {label}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: center;'>Tingkat Keyakinan: <b>{confidence*100:.2f}%</b></div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center; color: gray; font-size: small;'>Penting: Terus lakukan pemeriksaan rutin dan jaga kesehatan mulut.</div>", unsafe_allow_html=True)
 
 # Informasi disclaimer di bagian bawah aplikasi
 st.markdown("---")
