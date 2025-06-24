@@ -29,8 +29,9 @@ MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resn
 # so the model is downloaded only once.
 @st.cache_resource
 def download_model():
-    st.info("🔁 Memeriksa dan mengunduh model... Ini mungkin memerlukan waktu beberapa saat pada pertama kali.")
+    # st.info("🔁 Memeriksa dan mengunduh model... Ini mungkin memerlukan waktu beberapa saat pada pertama kali.") # Dihapus
     if not os.path.exists(MODEL_PATH):
+        st.warning("🔁 Mengunduh model dari Hugging Face... Ini mungkin memerlukan waktu beberapa saat.") # Ganti info dengan warning agar tetap terlihat penting
         os.makedirs(MODEL_DIR, exist_ok=True)
         try:
             response = requests.get(MODEL_URL, stream=True)
@@ -39,12 +40,12 @@ def download_model():
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
-            st.success("✅ Model berhasil diunduh!")
+            # st.success("✅ Model berhasil diunduh!") # Dihapus
         except requests.exceptions.RequestException as e:
             st.error(f"❌ Gagal mengunduh model: {e}. Pastikan URL benar dan ada koneksi internet.")
             return None # Mengembalikan None jika unduhan gagal
-    else:
-        st.success("Model sudah tersedia secara lokal.")
+    # else: # Dihapus
+        # st.success("Model sudah tersedia secara lokal.") # Dihapus
     return MODEL_PATH
 
 # =====================
@@ -62,7 +63,7 @@ def load_and_cache_model(model_path):
     try:
         # tf.keras.models.load_model dapat memuat format .keras dan .h5
         model = tf.keras.models.load_model(model_path)
-        st.success("✅ Model berhasil dimuat!")
+        # st.success("✅ Model berhasil dimuat!") # Dihapus
         return model
     except Exception as e:
         st.error(f"❌ Gagal memuat model: {e}")
