@@ -14,6 +14,7 @@ import base64
 from io import BytesIO
 import h5py
 import json
+import model
 
 # =====================
 # 2. KONFIGURASI MODEL
@@ -21,11 +22,13 @@ import json
 MODEL_DIR = "model"
 MODEL_FILE = "model_resnet152.h5"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/raw/main/model_resnet152.h5"
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
 
-@st.cache_resource
-def load_model_from_huggingface():
-    # Download ulang jika file gak ada
+
+# =====================
+# 3. UNDUH MODEL
+# =====================
+def download_model():
     if not os.path.exists(MODEL_PATH):
         st.warning("🔁 Mengunduh model dari Hugging Face...")
         os.makedirs(MODEL_DIR, exist_ok=True)
@@ -34,16 +37,7 @@ def load_model_from_huggingface():
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
-
-    try:
-        model = load_model(MODEL_PATH)
-        return model
-    except Exception as e:
-        st.error(f"❌ Gagal memuat model: {e}")
-        return None
-
-# Panggil sekali, model disimpan di variabel global
-model = load_model_from_huggingface()
+    return MODEL_PATH
 
 # =====================
 # 4. LOAD MODEL DENGAN FIX
