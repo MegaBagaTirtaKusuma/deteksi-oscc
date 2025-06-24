@@ -22,12 +22,14 @@ MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 # GANTI DENGAN ID FILE GOOGLE DRIVE MODEL .KERAS MILIKMU!
 # Cara mendapatkan ID: Dari link Google Drive "https://drive.google.com/file/d/INI_ID_FILE_KAMU/view",
 # ID-nya adalah "INI_ID_FILE_KAMU".
-GOOGLE_DRIVE_FILE_ID = "GANTI_DENGAN_ID_GOOGLE_DRIVE_MODEL_KERAS_MU_DI_SINI" # <--- PENTING! GANTI INI
+GOOGLE_DRIVE_FILE_ID = "1zbtyAu-rV5qkxc362kCt7fdRxKIcuAoS" # <--- INI ID YANG HARUS KAMU GUNAKAN
 
 # URL untuk direct download dari Google Drive, termasuk bypassing konfirmasi file besar
 # Parameter '&confirm=t' sangat penting untuk unduhan langsung tanpa interupsi.
 MODEL_URL = f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_FILE_ID}&confirm=t"
 
+# Sisa kode lainnya tetap sama seperti yang sudah saya berikan sebelumnya.
+# Pastikan tidak ada kode yang menangani file .h5 atau JSON di fungsi load_model.
 # =====================
 # 3. UNDUH MODEL
 # =====================
