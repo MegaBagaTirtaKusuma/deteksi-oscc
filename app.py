@@ -5,7 +5,7 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import model_from_json
+from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 import time
 import os
@@ -36,31 +36,18 @@ def download_model():
     return MODEL_PATH
 
 # =====================
-# 4. LOAD MODEL DENGAN FIX
+# 4. LOAD MODEL
 # =====================
-import h5py
-
-def load_custom_model(h5_path):
-    with h5py.File(h5_path, "r") as f:
-        model_config = f.attrs.get("model_config")
-        if model_config is None:
-            raise ValueError("Model config is missing in HDF5 file.")
-        model_config = model_config.decode("utf-8")
-    model = model_from_json(model_config)
-    model.load_weights(h5_path)
-    return model
-
 @st.cache_resource
 def load_oscc_model():
     try:
         model_path = download_model()
-        model = load_custom_model(model_path)
+        model = load_model(model_path)
         return model
     except Exception as e:
         st.error(f"❌ Gagal memuat model: {str(e)}")
         return None
 
-# Load model
 model = load_oscc_model()
 if model is None:
     st.stop()
