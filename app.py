@@ -1,3 +1,6 @@
+# =====================
+# 1. IMPORT LIBRARY
+# =====================
 import streamlit as st
 from PIL import Image
 import numpy as np
@@ -16,18 +19,21 @@ from io import BytesIO
 MODEL_DIR = "model"
 MODEL_FILE = "model_resnet152.h5"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/raw/main/model_resnet152.h5"
+HF_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152.h5"
 
 # =====================
 # 3. UNDUH MODEL
 # =====================
-def download_model():
+def download_model_from_hf():
     if not os.path.exists(MODEL_PATH):
-        st.warning("🔁 Mengunduh model dari Hugging Face...")
+        st.warning("📥 Mengunduh model dari Hugging Face...")
         os.makedirs(MODEL_DIR, exist_ok=True)
-        response = requests.get(MODEL_URL)
+
+        r = requests.get(HF_URL, stream=True)
         with open(MODEL_PATH, "wb") as f:
-            f.write(response.content)
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
     return MODEL_PATH
 
 # =====================
@@ -36,7 +42,7 @@ def download_model():
 @st.cache_resource
 def load_oscc_model():
     try:
-        model_path = download_model()
+        model_path = download_model_from_hf()
         model = load_model(model_path)
         return model
     except Exception as e:
