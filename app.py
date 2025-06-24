@@ -12,7 +12,7 @@ import requests
 MODEL_DIR = "model_keras" # Direktori untuk model .keras
 MODEL_FILE = "model_resnet152_bs8.keras" # Ekstensi .keras untuk format native Keras v3
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras" # URL model
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras" # URL model. Pastikan ini adalah model .keras yang valid.
 
 # =====================
 # 3. FUNGSI UNDUH MODEL
