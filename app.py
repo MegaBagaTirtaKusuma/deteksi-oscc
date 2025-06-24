@@ -13,14 +13,20 @@ import gdown
 import base64
 from io import BytesIO
 
-# =====================
-# 2. KONFIGURASI HALAMAN
-# =====================
-st.set_page_config(
-    page_title="Deteksi OSCC",
-    page_icon="🦷",
-    layout="centered"
-)
+# === Setup path model ===
+model_dir = "model"
+model_path = os.path.join(model_dir, "model_resnet152.h5")
+
+# === Download model jika belum ada ===
+if not os.path.exists(model_path):
+    st.warning("🔁 Mengunduh model dari Google Drive...")
+    os.makedirs(model_dir, exist_ok=True)
+
+    # Ganti dengan ID file dari Google Drive lo
+    file_id = "1xABCDEFghiJKLmnOPQ"  # << GANTI DI SINI
+    url = f"https://drive.google.com/uc?id={file_id}"
+    
+    gdown.download(url, model_path, quiet=False)
 
 # =====================
 # 3. FUNGSI UTAMA
