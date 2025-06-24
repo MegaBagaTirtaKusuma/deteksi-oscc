@@ -13,35 +13,27 @@ import gdown
 import base64
 from io import BytesIO
 
-# === Setup path model ===
-model_dir = "model"
-model_path = os.path.join(model_dir, "model_resnet152.h5")
-
-# === Download model jika belum ada ===
-if not os.path.exists(model_path):
-    st.warning("🔁 Mengunduh model dari Google Drive...")
-    os.makedirs(model_dir, exist_ok=True)
-
-    # Ganti dengan ID file dari Google Drive lo
-file_id = "1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII"
-url = "https://drive.google.com/file/d/1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII/view?usp=sharing"
-output = "model_resnet152.h5"
-gdown.download(url, output, quiet=False, fuzzy=True)
-
+# =====================
+# 2. KONFIGURASI MODEL
+# =====================
+MODEL_DIR = "model"
+MODEL_FILE = "model_resnet152.h5"
+MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
+GDRIVE_URL = "https://drive.google.com/file/d/1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII/view?usp=sharing"
 
 # =====================
-# 3. FUNGSI UTAMA
+# 3. UNDUH MODEL
 # =====================
-# Unduh model dari Google Drive jika belum ada
 def download_model():
-    model_path = '/test_resnet152/best model/model_resnet152.h5'
-    if not os.path.exists(model_path):
-        os.makedirs('model', exist_ok=True)
-        url = 'https://drive.google.com/file/d/1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII/view?usp=sharing'
-        gdown.download(url, model_path, quiet=False)
-    return model_path
+    if not os.path.exists(MODEL_PATH):
+        st.warning("🔁 Mengunduh model dari Google Drive...")
+        os.makedirs(MODEL_DIR, exist_ok=True)
+        gdown.download(GDRIVE_URL, MODEL_PATH, quiet=False, fuzzy=True)
+    return MODEL_PATH
 
-# Load model sekali saja
+# =====================
+# 4. LOAD MODEL
+# =====================
 @st.cache_resource
 def load_oscc_model():
     try:
@@ -49,10 +41,17 @@ def load_oscc_model():
         model = load_model(model_path)
         return model
     except Exception as e:
-        st.error(f"Gagal memuat model: {str(e)}")
+        st.error(f"❌ Gagal memuat model: {str(e)}")
         return None
 
-# Prediksi hasil OSCC
+# Load model
+model = load_oscc_model()
+if model is None:
+    st.stop()
+
+# =====================
+# 5. FUNGSI PREDIKSI
+# =====================
 def predict_oscc(image):
     img = Image.open(image).convert('RGB')
     img = img.resize((224, 224))
@@ -63,14 +62,7 @@ def predict_oscc(image):
     return ("KANKER (OSCC)", float(probability)) if probability > 0.5 else ("NORMAL", float(1 - probability))
 
 # =====================
-# 4. LOAD MODEL
-# =====================
-model = load_oscc_model()
-if model is None:
-    st.stop()
-
-# =====================
-# 5. UI UTAMA
+# 6. UI UTAMA
 # =====================
 st.markdown("<h1 style='text-align: center;'>Deteksi Oral Squamous Cell Carcinoma (OSCC)</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Unggah gambar mukosa oral untuk memeriksa apakah terdapat kanker</p>", unsafe_allow_html=True)
@@ -93,11 +85,11 @@ if uploaded_file:
             unsafe_allow_html=True
         )
 
-    with st.spinner('Menganalisis...'):
+    with st.spinner('🧠 Menganalisis...'):
         label, confidence = predict_oscc(uploaded_file)
         time.sleep(1)
 
-    st.success('Analisis selesai!')
+    st.success('✅ Analisis selesai!')
 
     col1, col2 = st.columns(2)
     with col1:
@@ -106,12 +98,12 @@ if uploaded_file:
         st.metric("Tingkat Kepercayaan", f"{confidence*100:.2f}%")
 
     if label == "KANKER (OSCC)":
-        st.warning("Terdeteksi kemungkinan OSCC. Disarankan segera konsultasi dengan dokter spesialis.")
+        st.warning("⚠️ Terdeteksi kemungkinan OSCC. Disarankan segera konsultasi dengan dokter spesialis.")
     else:
-        st.info("Tidak terdeteksi kanker. Tetap periksa secara berkala untuk deteksi dini.")
+        st.info("✅ Tidak terdeteksi kanker. Tetap periksa secara berkala untuk deteksi dini.")
 
 # =====================
-# 6. CSS RESPONSIF
+# 7. CSS RESPONSIF
 # =====================
 st.markdown(
     """
