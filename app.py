@@ -6,11 +6,10 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.models import load_model
 import time
 import os
 import requests
-import h5py
-from tensorflow.keras.models import model_from_json
 from io import BytesIO
 import base64
 
@@ -23,7 +22,7 @@ MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152.h5"
 
 # =====================
-# 3. UNDUH MODEL JIKA BELUM ADA
+# 3. UNDUH MODEL
 # =====================
 def download_model():
     if not os.path.exists(MODEL_PATH):
@@ -36,32 +35,25 @@ def download_model():
                     if chunk:
                         f.write(chunk)
         else:
-            st.error("❌ Gagal mengunduh model dari HuggingFace.")
+            st.error("❌ Gagal mengunduh model.")
     return MODEL_PATH
 
 # =====================
-# 4. LOAD MODEL KHUSUS
+# 4. LOAD MODEL LANGSUNG
 # =====================
-def load_custom_model(h5_path):
-    with h5py.File(h5_path, "r") as f:
-        model_config = f.attrs.get("model_config")
-        if model_config is None:
-            raise ValueError("❌ Model config tidak ditemukan di HDF5 file.")
-        if isinstance(model_config, bytes):
-            model_config = model_config.decode("utf-8")
-    model = model_from_json(model_config)
-    model.load_weights(h5_path)
-    return model
-
 @st.cache_resource
 def load_oscc_model():
     try:
         model_path = download_model()
-        model = load_custom_model(model_path)
+        model = load_model(model_path)  # ⛔ jangan pakai model_from_json
         return model
     except Exception as e:
         st.error(f"❌ Gagal memuat model: {str(e)}")
         return None
+
+model = load_oscc_model()
+if model is None:
+    st.stop()
 
 # =====================
 # 5. PREDIKSI
@@ -76,14 +68,7 @@ def predict_oscc(image):
     return ("KANKER (OSCC)", float(probability)) if probability > 0.5 else ("NORMAL", float(1 - probability))
 
 # =====================
-# 6. LOAD MODEL
-# =====================
-model = load_oscc_model()
-if model is None:
-    st.stop()
-
-# =====================
-# 7. UI
+# 6. UI UTAMA
 # =====================
 st.markdown("<h1 style='text-align: center;'>Deteksi Oral Squamous Cell Carcinoma (OSCC)</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Unggah gambar mukosa oral untuk memeriksa apakah terdapat kanker</p>", unsafe_allow_html=True)
@@ -92,7 +77,7 @@ uploaded_file = st.file_uploader("Pilih gambar OSCC atau Normal...", type=["jpg"
 
 if uploaded_file:
     image = Image.open(uploaded_file)
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1,2,1])
     with col2:
         buffered = BytesIO()
         image.save(buffered, format="PNG")
@@ -123,7 +108,7 @@ if uploaded_file:
         st.info("✅ Tidak terdeteksi kanker. Tetap periksa secara berkala untuk deteksi dini.")
 
 # =====================
-# 8. CSS RESPONSIF
+# 7. RESPONSIVE CSS
 # =====================
 st.markdown(
     """
