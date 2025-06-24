@@ -5,13 +5,14 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import model_from_json
 from tensorflow.keras.preprocessing.image import img_to_array
 import time
 import os
 import requests
-import base64
+import h5py
+from tensorflow.keras.models import model_from_json
 from io import BytesIO
+import base64
 
 # =====================
 # 2. KONFIGURASI MODEL
@@ -22,30 +23,32 @@ MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152.h5"
 
 # =====================
-# 3. UNDUH MODEL
+# 3. UNDUH MODEL JIKA BELUM ADA
 # =====================
 def download_model():
     if not os.path.exists(MODEL_PATH):
-        st.warning("🔁 Mengunduh model dari Hugging Face...")
+        st.warning("🔁 Mengunduh model dari HuggingFace...")
         os.makedirs(MODEL_DIR, exist_ok=True)
         response = requests.get(MODEL_URL, stream=True)
-        with open(MODEL_PATH, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
+        if response.status_code == 200:
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        else:
+            st.error("❌ Gagal mengunduh model dari HuggingFace.")
     return MODEL_PATH
 
 # =====================
-# 4. LOAD MODEL DENGAN FIX
+# 4. LOAD MODEL KHUSUS
 # =====================
-import h5py
-
 def load_custom_model(h5_path):
     with h5py.File(h5_path, "r") as f:
         model_config = f.attrs.get("model_config")
         if model_config is None:
-            raise ValueError("Model config is missing in HDF5 file.")
-        model_config = model_config.decode("utf-8")
+            raise ValueError("❌ Model config tidak ditemukan di HDF5 file.")
+        if isinstance(model_config, bytes):
+            model_config = model_config.decode("utf-8")
     model = model_from_json(model_config)
     model.load_weights(h5_path)
     return model
@@ -60,13 +63,8 @@ def load_oscc_model():
         st.error(f"❌ Gagal memuat model: {str(e)}")
         return None
 
-# Load model
-model = load_oscc_model()
-if model is None:
-    st.stop()
-
 # =====================
-# 5. FUNGSI PREDIKSI
+# 5. PREDIKSI
 # =====================
 def predict_oscc(image):
     img = Image.open(image).convert('RGB')
@@ -78,7 +76,14 @@ def predict_oscc(image):
     return ("KANKER (OSCC)", float(probability)) if probability > 0.5 else ("NORMAL", float(1 - probability))
 
 # =====================
-# 6. UI UTAMA
+# 6. LOAD MODEL
+# =====================
+model = load_oscc_model()
+if model is None:
+    st.stop()
+
+# =====================
+# 7. UI
 # =====================
 st.markdown("<h1 style='text-align: center;'>Deteksi Oral Squamous Cell Carcinoma (OSCC)</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Unggah gambar mukosa oral untuk memeriksa apakah terdapat kanker</p>", unsafe_allow_html=True)
@@ -87,7 +92,7 @@ uploaded_file = st.file_uploader("Pilih gambar OSCC atau Normal...", type=["jpg"
 
 if uploaded_file:
     image = Image.open(uploaded_file)
-    col1, col2, col3 = st.columns([1,2,1])
+    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         buffered = BytesIO()
         image.save(buffered, format="PNG")
@@ -106,12 +111,11 @@ if uploaded_file:
         time.sleep(1)
 
     st.success('✅ Analisis selesai!')
-
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Hasil", label)
     with col2:
-        st.metric("Tingkat Kepercayaan", f"{confidence*100:.2f}%")
+        st.metric("Tingkat Kepercayaan", f"{confidence * 100:.2f}%")
 
     if label == "KANKER (OSCC)":
         st.warning("⚠️ Terdeteksi kemungkinan OSCC. Disarankan segera konsultasi dengan dokter spesialis.")
@@ -119,7 +123,7 @@ if uploaded_file:
         st.info("✅ Tidak terdeteksi kanker. Tetap periksa secara berkala untuk deteksi dini.")
 
 # =====================
-# 7. CSS RESPONSIF
+# 8. CSS RESPONSIF
 # =====================
 st.markdown(
     """
