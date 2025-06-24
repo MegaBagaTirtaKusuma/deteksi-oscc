@@ -19,7 +19,7 @@ from io import BytesIO
 MODEL_DIR = "model"
 MODEL_FILE = "model_resnet152.h5"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-GDRIVE_URL = "https://drive.google.com/file/d/1yk3Fpx9cHU6OVkUga_8entgR_keXo6CU"
+GDRIVE_URL = "https://drive.google.com/uc?id=1yk3Fpx9cHU6OVkUga_8entgR_keXo6CU"
 
 # =====================
 # 3. UNDUH MODEL
@@ -28,7 +28,7 @@ def download_model():
     if not os.path.exists(MODEL_PATH):
         st.warning("🔁 Mengunduh model dari Google Drive...")
         os.makedirs(MODEL_DIR, exist_ok=True)
-        gdown.download(GDRIVE_URL, MODEL_PATH, quiet=False, fuzzy=True)
+        gdown.download(GDRIVE_URL, MODEL_PATH, quiet=True)
     return MODEL_PATH
 
 # =====================
@@ -44,7 +44,6 @@ def load_oscc_model():
         st.error(f"❌ Gagal memuat model: {str(e)}")
         return None
 
-# Load model
 model = load_oscc_model()
 if model is None:
     st.stop()
