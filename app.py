@@ -1,61 +1,40 @@
-# =====================
-# 1. IMPORT LIBRARY
-# =====================
 import streamlit as st
-from PIL import Image
-import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model, model_from_json
-from tensorflow.keras.preprocessing.image import img_to_array
-import time
 import os
 import requests
-import base64
-from io import BytesIO
-import h5py
-import json
 
-# =====================
-# 2. KONFIGURASI MODEL
-# =====================
-MODEL_DIR = "model"
-MODEL_FILE = "model_resnet152_bs8.keras"
-MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
-
-
-# =====================
-# 3. UNDUH MODEL
-# =====================
+# ====================
+# 1. Download Model
+# ====================
+@st.cache_resource
 def download_model():
-    if not os.path.exists(MODEL_PATH) or os.path.getsize(MODEL_PATH) < 10000:
-        st.warning("🔁 Mengunduh model dari Hugging Face...")
-        os.makedirs(MODEL_DIR, exist_ok=True)
-        response = requests.get(MODEL_URL, stream=True)
-        with open(MODEL_PATH, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-        if os.path.getsize(MODEL_PATH) < 10000:
-            raise ValueError("❌ Gagal mengunduh model. File tidak valid.")
-    return MODEL_PATH
+    url = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152.h5"
+    local_path = "model_resnet152.h5"
 
+    if not os.path.exists(local_path):
+        with st.spinner("Mengunduh model..."):
+            response = requests.get(url, stream=True)
+            if response.status_code == 200:
+                with open(local_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            else:
+                st.error(f"Gagal mengunduh model: {response.status_code}")
+                raise Exception("Download model gagal")
 
-# =====================
-# 4. LOAD MODEL DENGAN FIX
-# =====================
+    return local_path
+
+# ====================
+# 2. Load Model
+# ====================
 @st.cache_resource
 def load_custom_model():
-    path = download_model()
-    return tf.keras.models.load_model(path)
+    model_path = download_model()
+    return tf.keras.models.load_model(model_path)
 
-# INI YANG HARUS DITAMBAHKAN ⬇️
-@st.cache_resource
-def load_custom_model():
-    path = download_model()
-    return tf.keras.models.load_model(path)
-
+# Inisialisasi Model
 model = load_custom_model()
+
 
 
 
