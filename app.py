@@ -23,10 +23,10 @@ if not os.path.exists(model_path):
     os.makedirs(model_dir, exist_ok=True)
 
     # Ganti dengan ID file dari Google Drive lo
-    file_id = "1xABCDEFghiJKLmnOPQ"  # << GANTI DI SINI
-    url = f"https://drive.google.com/uc?id={file_id}"
-    
-    gdown.download(url, model_path, quiet=False)
+file_id = "1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII"
+url = f"https://drive.google.com/uc?id={file_id}"
+gdown.download(url, model_path, quiet=False)
+
 
 # =====================
 # 3. FUNGSI UTAMA
