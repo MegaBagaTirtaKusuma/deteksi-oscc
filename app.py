@@ -23,6 +23,7 @@ MODEL_FILE = "model_resnet152.keras"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
 
+
 # =====================
 # 3. UNDUH MODEL
 # =====================
