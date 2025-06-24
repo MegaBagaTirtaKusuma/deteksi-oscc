@@ -12,9 +12,6 @@ import os
 import requests
 import base64
 from io import BytesIO
-import h5py
-import json
-from tensorflow.keras.models import model_from_json
 
 # =====================
 # 2. KONFIGURASI MODEL
@@ -29,7 +26,7 @@ MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resn
 # =====================
 def download_model():
     if not os.path.exists(MODEL_PATH):
-        st.warning("\U0001F501 Mengunduh model dari Hugging Face...")
+        st.warning("🔁 Mengunduh model dari Hugging Face...")
         os.makedirs(MODEL_DIR, exist_ok=True)
         response = requests.get(MODEL_URL, stream=True)
         with open(MODEL_PATH, 'wb') as f:
@@ -41,20 +38,30 @@ def download_model():
 # =====================
 # 4. LOAD MODEL DENGAN FIX
 # =====================
+import h5py
+import json
+from tensorflow.keras.models import model_from_json
+
 def load_custom_model(h5_path):
     with h5py.File(h5_path, "r") as f:
         model_config = f.attrs.get("model_config")
         if model_config is None:
             raise ValueError("Model config is missing in HDF5 file.")
-
+        
+        # decode jika byte, kalau str langsung aja
         if isinstance(model_config, bytes):
             model_config = model_config.decode("utf-8")
-
+        elif isinstance(model_config, str):
+            model_config = model_config
+        
         model_json = json.loads(model_config)
 
+        # Hilangkan batch_input_shape dan batch_shape dari semua layer
         for layer in model_json['config']['layers']:
-            layer['config'].pop('batch_input_shape', None)
-            layer['config'].pop('batch_shape', None)
+            if 'batch_input_shape' in layer['config']:
+                layer['config'].pop('batch_input_shape', None)
+            if 'batch_shape' in layer['config']:
+                layer['config'].pop('batch_shape', None)
 
         cleaned_model_config = json.dumps(model_json)
 
@@ -62,25 +69,11 @@ def load_custom_model(h5_path):
     model.load_weights(h5_path)
     return model
 
-@st.cache_resource
-def load_oscc_model():
-    try:
-        model_path = download_model()
-        model = load_custom_model(model_path)
-        return model
-    except Exception as e:
-        st.error(f"\u274c Gagal memuat model: {str(e)}")
-        return None
-
-# Load model
-model = load_oscc_model()
-if model is None:
-    st.stop()
 
 # =====================
 # 5. FUNGSI PREDIKSI
 # =====================
-def predict_oscc(image, model):
+def predict_oscc(image):
     img = Image.open(image).convert('RGB')
     img = img.resize((224, 224))
     img_array = img_to_array(img) / 255.0
@@ -114,7 +107,7 @@ if uploaded_file:
         )
 
     with st.spinner('🧠 Menganalisis...'):
-        label, confidence = predict_oscc(uploaded_file, model)
+        label, confidence = predict_oscc(uploaded_file)
         time.sleep(1)
 
     st.success('✅ Analisis selesai!')
