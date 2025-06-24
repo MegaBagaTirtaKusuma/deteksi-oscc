@@ -19,7 +19,7 @@ from io import BytesIO
 MODEL_DIR = "model"
 MODEL_FILE = "model_resnet152_bs8.keras" # Sesuaikan nama file model yang sebenarnya
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152.h5"
 
 
 # =====================
