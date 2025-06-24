@@ -48,27 +48,29 @@ def load_custom_model(h5_path):
         
         if isinstance(model_config, bytes):
             model_config = model_config.decode("utf-8")
-        elif isinstance(model_config, str):
-            model_config = model_config
         
         model_json = json.loads(model_config)
 
-        # Hapus batch_input_shape & batch_shape
-        for layer in model_json['config']['layers']:
-            layer['config'].pop('batch_input_shape', None)
-            layer['config'].pop('batch_shape', None)
+        # Hapus batch_shape & batch_input_shape
+        for layer in model_json["config"]["layers"]:
+            layer_config = layer["config"]
+            layer_config.pop("batch_input_shape", None)
+            layer_config.pop("batch_shape", None)
+
+        # Hapus juga field di model config level atas (opsional tapi aman)
+        model_json["config"].pop("batch_input_shape", None)
 
         cleaned_model_config = json.dumps(model_json)
 
-    model = model_from_json(cleaned_model_config)
+    try:
+        model = model_from_json(cleaned_model_config)
+    except ValueError as e:
+        st.error("Model error: Kemungkinan format .h5 tidak sepenuhnya kompatibel dengan deserializer JSON.")
+        raise e
+
     model.load_weights(h5_path)
     return model
 
-@st.cache_resource
-def get_model():
-    return load_custom_model(download_model())
-
-model = get_model()
 
 # =====================
 # 5. FUNGSI PREDIKSI
