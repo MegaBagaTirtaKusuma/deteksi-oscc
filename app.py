@@ -9,9 +9,9 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 import time
 import os
-import requests
 import base64
 from io import BytesIO
+import requests
 
 # =====================
 # 2. KONFIGURASI MODEL
@@ -19,19 +19,18 @@ from io import BytesIO
 MODEL_DIR = "model"
 MODEL_FILE = "model_resnet152.h5"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-HF_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152.h5"
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152.h5"
 
 # =====================
-# 3. UNDUH MODEL
+# 3. UNDUH MODEL DARI HF
 # =====================
-def download_model_from_hf():
+def download_model():
     if not os.path.exists(MODEL_PATH):
         st.warning("📥 Mengunduh model dari Hugging Face...")
         os.makedirs(MODEL_DIR, exist_ok=True)
-
-        r = requests.get(HF_URL, stream=True)
-        with open(MODEL_PATH, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
+        response = requests.get(MODEL_URL, stream=True)
+        with open(MODEL_PATH, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
     return MODEL_PATH
@@ -42,14 +41,13 @@ def download_model_from_hf():
 @st.cache_resource
 def load_oscc_model():
     try:
-        model_path = download_model_from_hf()
-        model = load_model(model_path)
+        model_path = download_model()
+        model = load_model(model_path, compile=False)  # ✅ fix error batch_shape
         return model
     except Exception as e:
         st.error(f"❌ Gagal memuat model: {str(e)}")
         return None
 
-# Load model
 model = load_oscc_model()
 if model is None:
     st.stop()
@@ -72,7 +70,7 @@ def predict_oscc(image):
 st.markdown("<h1 style='text-align: center;'>Deteksi Oral Squamous Cell Carcinoma (OSCC)</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Unggah gambar mukosa oral untuk memeriksa apakah terdapat kanker</p>", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader("Pilih gambar OSCC atau Normal...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("📸 Pilih gambar OSCC atau Normal...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file)
