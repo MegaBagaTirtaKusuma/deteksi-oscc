@@ -1,58 +1,56 @@
+# ==============================================================================
+# Deteksi Oral Squamous Cell Carcinoma (OSCC)
+# Aplikasi Streamlit dengan model Deep Learning dari Hugging Face
+# ==============================================================================
+
 # =====================
 # 1. IMPORT LIBRARY
 # =====================
 import streamlit as st
-from PIL import Image
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import load_model # Diperlukan untuk memuat model .keras
-from tensorflow.keras.preprocessing.image import img_to_array
-import time
-import os
-import requests # Untuk mengunduh file dari URL
+from PIL import Image # Untuk manipulasi gambar
+import numpy as np # Untuk operasi numerik
+import tensorflow as tf # Framework Deep Learning
+from tensorflow.keras.models import load_model # Khusus untuk memuat model .keras
+from tensorflow.keras.preprocessing.image import img_to_array # Untuk konversi gambar ke array
+import time # Untuk memberikan jeda waktu (misal: di spinner)
+import os # Untuk operasi sistem file (membuat folder, mengecek path)
+import requests # Untuk mengunduh model dari URL
 
 # =====================
 # 2. KONFIGURASI MODEL
 # =====================
-# Direktori tempat model akan disimpan secara lokal
+# Direktori lokal tempat model akan disimpan setelah diunduh
 MODEL_DIR = "model"
-# Nama file model setelah diunduh (harus .keras sesuai format modelmu)
-MODEL_FILE = "model_resnet152.keras"
+# Nama file model yang akan disimpan secara lokal (sesuai dengan di Hugging Face)
+MODEL_FILE = "model_resnet152_bs32.keras"
 # Path lengkap ke file model di sistem lokal
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 
-# --- KONFIGURASI GOOGLE DRIVE ---
-# GANTI DENGAN ID FILE GOOGLE DRIVE MODEL .KERAS MILIKMU!
-# Cara mendapatkan ID: Dari link Google Drive "https://drive.google.com/file/d/INI_ID_FILE_KAMU/view",
-# ID-nya adalah "INI_ID_FILE_KAMU".
-# Berdasarkan link yang kamu berikan sebelumnya, ID-mu adalah: 1zbtyAu-rV5qkxc362kCt7fdRxKIcuAoS
-GOOGLE_DRIVE_FILE_ID = "1zbtyAu-rV5qkxc362kCt7fdRxKIcuAoS"
-
-# URL untuk direct download dari Google Drive.
-# '&confirm=t' sangat penting untuk melewati halaman konfirmasi unduhan file besar.
-MODEL_URL = f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_FILE_ID}&confirm=t"
+# URL unduhan langsung model dari Hugging Face Hub
+# Ini adalah URL yang kamu berikan: bagastk/deteksi-oscc/resolve/main/model_resnet152_bs32.keras
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs32.keras"
 
 # =====================
 # 3. FUNGSI UNDUH MODEL
 # =====================
-def download_model_from_drive():
+def download_model_from_huggingface():
     """
-    Mengunduh file model .keras dari Google Drive jika belum ada di lokal.
+    Mengunduh file model .keras dari Hugging Face Hub jika belum ada di lokal.
     Menampilkan progress bar saat mengunduh.
     """
     if not os.path.exists(MODEL_PATH):
-        st.warning("🔁 Mengunduh model dari Google Drive. Ini mungkin memerlukan waktu sedikit...")
+        st.warning("🔁 Mengunduh model dari Hugging Face. Ini mungkin memerlukan waktu sedikit...")
         os.makedirs(MODEL_DIR, exist_ok=True) # Pastikan folder 'model' ada
 
         try:
             response = requests.get(MODEL_URL, stream=True)
-            # Akan memicu HTTPError jika status kode respons tidak 200 (misal 404 Not Found)
-            response.raise_for_status() 
+            # Memastikan respons HTTP sukses (status kode 200)
+            response.raise_for_status()
 
             total_size_in_bytes = int(response.headers.get('content-length', 0))
             block_size = 8192 # Ukuran chunk untuk unduhan (8 KB)
 
-            # Inisialisasi progress bar di Streamlit
+            # Inisialisasi progress bar dan teks di Streamlit
             progress_bar_text = st.empty()
             progress_bar = st.progress(0)
             bytes_downloaded = 0
@@ -77,24 +75,24 @@ def download_model_from_drive():
 
         except requests.exceptions.RequestException as e:
             st.error(f"❌ Gagal mengunduh model: {e}")
-            st.info("Pastikan ID Google Drive benar, akses file diatur ke 'Anyone with the link', dan file model tidak dihapus.")
-            # Hentikan eksekusi Streamlit jika unduhan gagal agar tidak memuat model yang tidak ada/korup
+            st.info("Pastikan URL model benar dan dapat diakses. Periksa koneksi internet Anda.")
+            # Hentikan eksekusi Streamlit jika unduhan gagal
             st.stop() 
     
     return MODEL_PATH
 
-# --- Panggil fungsi unduh model di awal, sebelum mencoba memuatnya ---
-downloaded_model_path = download_model_from_drive()
+# --- Panggil fungsi unduh model di awal eksekusi aplikasi ---
+downloaded_model_path = download_model_from_huggingface()
 
 # =====================
 # 4. FUNGSI MUAT MODEL
 # =====================
-@st.cache_resource # Dekorator ini akan membuat model hanya dimuat sekali saja
+@st.cache_resource # Dekorator ini memastikan model hanya dimuat sekali saja
 def load_oscc_model(model_path):
     """
     Memuat model Keras dari file .keras yang sudah diunduh.
     """
-    st.info("⏳ Memuat model, mohon tunggu...")
+    st.info("⏳ Memuat model, mohon tunggu sebentar...")
     try:
         # load_model dari TensorFlow/Keras secara otomatis menangani format .keras
         model = load_model(model_path)
@@ -115,25 +113,26 @@ def predict_oscc(image_file):
     """
     Melakukan prediksi apakah gambar mukosa oral mengandung KANKER (OSCC) atau NORMAL.
     """
-    # Buka gambar dan konversi ke RGB (ResNet biasanya expects 3 channel)
+    # Buka gambar menggunakan PIL dan konversi ke RGB (ResNet biasanya expects 3 channel)
     img = Image.open(image_file).convert('RGB')
-    # Resize gambar ke ukuran input yang diharapkan model (misal: 224x224 untuk ResNet)
+    # Resize gambar ke ukuran input yang diharapkan model (224x224 untuk ResNet)
     img = img.resize((224, 224))
-    # Konversi gambar ke array NumPy dan normalisasi piksel ke rentang 0-1
+    # Konversi gambar ke array NumPy dan normalisasi nilai piksel ke rentang 0-1
     img_array = img_to_array(img) / 255.0
     # Tambahkan dimensi batch. Model berharap input berbentuk (batch_size, height, width, channels)
     img_array = np.expand_dims(img_array, axis=0) 
     
-    # Lakukan prediksi
+    # Lakukan prediksi menggunakan model
     prediction = model.predict(img_array)
     # Ambil probabilitas untuk kelas positif (kanker), asumsi model output 1 nilai
     probability = prediction[0][0] 
     
-    # Tentukan label dan keyakinan berdasarkan threshold 0.5
+    # Tentukan label dan tingkat keyakinan berdasarkan threshold 0.5
     if probability > 0.5:
         return "KANKER (OSCC)", float(probability)
     else:
-        return "NORMAL", float(1 - probability) # Jika tidak kanker, probabilitasnya adalah 1 - probabilitas kanker
+        # Jika bukan kanker, probabilitasnya adalah 1 - probabilitas kanker
+        return "NORMAL", float(1 - probability)
 
 # =====================
 # 6. UI UTAMA APLIKASI
@@ -168,6 +167,6 @@ if uploaded_file:
             st.write(f"Tingkat Keyakinan: **{confidence*100:.2f}%**")
             st.info("Penting: Terus lakukan pemeriksaan rutin dan jaga kesehatan mulut.")
 
-# Informasi disclaimer di bagian bawah
+# Informasi disclaimer di bagian bawah aplikasi
 st.markdown("---")
 st.markdown("<p style='text-align: center; font-size: small;'>Aplikasi ini hanya untuk tujuan demonstrasi dan tidak menggantikan diagnosa medis profesional.</p>", unsafe_allow_html=True)
