@@ -36,21 +36,39 @@ def download_model():
     return MODEL_PATH
 
 # =====================
-# 4. LOAD MODEL
+# 4. LOAD MODEL DENGAN FIX
 # =====================
-@st.cache_resource
-def load_oscc_model():
-    try:
-        model_path = download_model()
-        model = load_model(model_path)
-        return model
-    except Exception as e:
-        st.error(f"❌ Gagal memuat model: {str(e)}")
-        return None
+import h5py
+import json
+from tensorflow.keras.models import model_from_json
 
-model = load_oscc_model()
-if model is None:
-    st.stop()
+def load_custom_model(h5_path):
+    with h5py.File(h5_path, "r") as f:
+        model_config = f.attrs.get("model_config")
+        if model_config is None:
+            raise ValueError("Model config is missing in HDF5 file.")
+        
+        # decode jika byte, kalau str langsung aja
+        if isinstance(model_config, bytes):
+            model_config = model_config.decode("utf-8")
+        elif isinstance(model_config, str):
+            model_config = model_config
+        
+        model_json = json.loads(model_config)
+
+        # Hilangkan batch_input_shape dan batch_shape dari semua layer
+        for layer in model_json['config']['layers']:
+            if 'batch_input_shape' in layer['config']:
+                layer['config'].pop('batch_input_shape', None)
+            if 'batch_shape' in layer['config']:
+                layer['config'].pop('batch_shape', None)
+
+        cleaned_model_config = json.dumps(model_json)
+
+    model = model_from_json(cleaned_model_config)
+    model.load_weights(h5_path)
+    return model
+
 
 # =====================
 # 5. FUNGSI PREDIKSI
