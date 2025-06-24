@@ -73,8 +73,6 @@ def load_custom_model(h5_path):
     return model
 
 
-model = load_custom_model(h5_path)
-
 # =====================
 # 5. FUNGSI PREDIKSI
 # =====================
