@@ -5,15 +5,12 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model, model_from_json
 from tensorflow.keras.preprocessing.image import img_to_array
 import time
 import os
 import requests
 import base64
 from io import BytesIO
-import h5py
-import json
 
 # =====================
 # 2. KONFIGURASI MODEL
@@ -42,11 +39,10 @@ def download_model():
 # =====================
 @st.cache_resource
 def load_custom_model():
-    path = download_model()
-    return tf.keras.models.load_model(path)
+    model_path = download_model()
+    return tf.keras.models.load_model(model_path)
 
 model = load_custom_model()
-
 
 # =====================
 # 5. FUNGSI PREDIKSI
