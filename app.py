@@ -19,10 +19,9 @@ import json
 # 2. KONFIGURASI MODEL
 # =====================
 MODEL_DIR = "model"
-MODEL_FILE = "model_resnet152.keras"
+MODEL_FILE = "model_resnet152_bs8.keras"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
-
 
 # =====================
 # 3. UNDUH MODEL
@@ -39,13 +38,15 @@ def download_model():
     return MODEL_PATH
 
 # =====================
-# 4. LOAD MODEL DENGAN FIX
+# 4. LOAD MODEL
 # =====================
 @st.cache_resource
 def load_custom_model():
-    return tf.keras.models.load_model(download_model())
+    path = download_model()
+    return tf.keras.models.load_model(path)
 
 model = load_custom_model()
+
 
 # =====================
 # 5. FUNGSI PREDIKSI
