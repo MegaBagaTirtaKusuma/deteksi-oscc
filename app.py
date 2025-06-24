@@ -5,22 +5,25 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model, model_from_json
+# Hapus import model_from_json, img_to_array jika tf.keras sudah mencakupnya secara internal
+# Kita tetap butuh img_to_array, tapi load_model dari tf.keras saja sudah cukup
 from tensorflow.keras.preprocessing.image import img_to_array
 import time
 import os
 import requests
 import base64
 from io import BytesIO
-import h5py
-import json
+# import h5py # TIDAK PERLU lagi karena kita akan pakai tf.keras.models.load_model untuk .keras
+# import json # TIDAK PERLU lagi karena kita akan pakai tf.keras.models.load_model untuk .keras
 
 # =====================
 # 2. KONFIGURASI MODEL
 # =====================
 MODEL_DIR = "model"
-MODEL_FILE = "model_resnet152.h5"
+# Ubah ekstensi file lokal agar sesuai dengan format .keras
+MODEL_FILE = "model_resnet152_bs8.keras"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
+# Ini adalah URL yang benar dari Hugging Face untuk file LFS
 MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
 
 
@@ -29,62 +32,87 @@ MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resn
 # =====================
 def download_model():
     if not os.path.exists(MODEL_PATH):
-        st.warning("🔁 Mengunduh model dari Hugging Face...")
+        st.warning(f"🔁 Mengunduh model dari Hugging Face ke {MODEL_PATH}...")
         os.makedirs(MODEL_DIR, exist_ok=True)
-        response = requests.get(MODEL_URL, stream=True)
-        with open(MODEL_PATH, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
+        try:
+            response = requests.get(MODEL_URL, stream=True)
+            response.raise_for_status() # Cek jika ada error HTTP (misal: 404)
+            
+            # Mendapatkan ukuran total dari header Content-Length
+            total_size_in_bytes = int(response.headers.get('content-length', 0))
+            if total_size_in_bytes == 0:
+                st.warning("⚠️ Tidak dapat menentukan ukuran file dari header Content-Length. Unduhan mungkin tidak akurat.")
+                # Lanjutkan unduhan tanpa progress bar yang akurat
+
+            block_size = 8192 # bytes
+            progress_bar = st.progress(0)
+            downloaded_size = 0
+
+            with open(MODEL_PATH, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=block_size):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                        if total_size_in_bytes > 0: # Hanya update progress jika total_size diketahui
+                            progress = min(int((downloaded_size / total_size_in_bytes) * 100), 100)
+                            progress_bar.progress(progress)
+            
+            # Validasi ukuran file setelah unduh
+            actual_file_size = os.path.getsize(MODEL_PATH)
+            if total_size_in_bytes > 0 and actual_file_size != total_size_in_bytes:
+                st.error(f"❌ Ukuran file yang diunduh tidak cocok! Diharapkan: {total_size_in_bytes} bytes, Aktual: {actual_file_size} bytes. File mungkin rusak.")
+                os.remove(MODEL_PATH) # Hapus file yang rusak agar diunduh ulang
+                st.stop()
+            elif actual_file_size == 0:
+                st.error(f"❌ File yang diunduh kosong ({actual_file_size} bytes). File mungkin rusak.")
+                os.remove(MODEL_PATH)
+                st.stop()
+            else:
+                st.success("✅ Model berhasil diunduh!")
+                st.info(f"Ukuran file yang diunduh: {actual_file_size / (1024 * 1024):.2f} MB.") # Tampilkan dalam MB
+
+        except requests.exceptions.RequestException as e:
+            st.error(f"❌ Gagal mengunduh model. Pastikan URL benar dan ada koneksi internet. Detail: {e}")
+            if os.path.exists(MODEL_PATH):
+                os.remove(MODEL_PATH) # Hapus file yang tidak lengkap/rusak
+            st.stop() # Hentikan aplikasi jika unduh gagal
+    else:
+        actual_file_size = os.path.getsize(MODEL_PATH)
+        st.info(f"💡 Model sudah ada secara lokal di {MODEL_PATH}.")
+        st.info(f"Ukuran file lokal: {actual_file_size / (1024 * 1024):.2f} MB.")
     return MODEL_PATH
 
 # =====================
-# 4. LOAD MODEL DENGAN FIX
+# 4. LOAD MODEL MENGGUNAKAN TF.KERAS.MODELS.LOAD_MODEL
 # =====================
-def load_custom_model(h5_path):
-    with h5py.File(h5_path, "r") as f:
-        model_config = f.attrs.get("model_config")
-        if model_config is None:
-            raise ValueError("Model config is missing in HDF5 file.")
-        
-        if isinstance(model_config, bytes):
-            model_config = model_config.decode("utf-8")
-        
-        model_json = json.loads(model_config)
-
-        # Hapus batch_shape & batch_input_shape
-        for layer in model_json["config"]["layers"]:
-            layer_config = layer["config"]
-            layer_config.pop("batch_input_shape", None)
-            layer_config.pop("batch_shape", None)
-
-        # Hapus juga field di model config level atas (opsional tapi aman)
-        model_json["config"].pop("batch_input_shape", None)
-
-        cleaned_model_config = json.dumps(model_json)
-
+# Fungsi ini sekarang jauh lebih sederhana dan lebih robust untuk format .keras
+def load_custom_model(model_path):
+    st.info(f"⏳ Memuat model dari: {model_path}")
     try:
-        model = model_from_json(cleaned_model_config)
-    except ValueError as e:
-        st.error("Model error: Kemungkinan format .h5 tidak sepenuhnya kompatibel dengan deserializer JSON.")
-        raise e
-
-    model.load_weights(h5_path)
-    return model
-
-
+        # Gunakan tf.keras.models.load_model langsung, ini lebih tepat untuk format .keras
+        model = tf.keras.models.load_model(model_path)
+        st.success("✅ Model berhasil dimuat!")
+        return model
+    except Exception as e:
+        st.error(f"❌ Gagal memuat model. Pastikan file '{model_path}' adalah model Keras (.keras) yang valid.")
+        st.error(f"Detail error: {e}")
+        st.warning(f"Coba hapus file '{model_path}' secara manual jika error terus berlanjut dan restart aplikasi.")
+        st.stop() # Hentikan aplikasi jika gagal memuat model
 
 
 # =====================
 # 5. FUNGSI PREDIKSI
 # =====================
-def predict_oscc(image):
+# Penting: Fungsi predict_oscc harus menerima objek model sebagai argumen!
+def predict_oscc(image, model_obj): # Ganti 'model' menjadi 'model_obj' untuk menghindari konflik nama
     img = Image.open(image).convert('RGB')
     img = img.resize((224, 224))
     img_array = img_to_array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
-    prediction = model.predict(img_array)
-    probability = prediction[0][0]
+    
+    prediction = model_obj.predict(img_array) # Gunakan model_obj yang dilewatkan
+    probability = prediction[0][0] 
+    
     return ("KANKER (OSCC)", float(probability)) if probability > 0.5 else ("NORMAL", float(1 - probability))
 
 # =====================
@@ -92,6 +120,18 @@ def predict_oscc(image):
 # =====================
 st.markdown("<h1 style='text-align: center;'>Deteksi Oral Squamous Cell Carcinoma (OSCC)</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center;'>Unggah gambar mukosa oral untuk memeriksa apakah terdapat kanker</p>", unsafe_allow_html=True)
+
+# Unduh dan muat model sekali saja
+# Gunakan st.cache_resource untuk menghindari pengunduhan dan pemuatan berulang
+@st.cache_resource
+def get_model_cached(): # Ubah nama fungsi untuk menghindari kebingungan
+    model_path = download_model()
+    model = load_custom_model(model_path)
+    return model
+
+# Muat model di awal aplikasi
+# Ini akan memanggil get_model_cached() pertama kali, dan akan menggunakan cache selanjutnya
+model_loaded = get_model_cached() # Simpan model di variabel dengan nama yang jelas
 
 uploaded_file = st.file_uploader("Pilih gambar OSCC atau Normal...", type=["jpg", "jpeg", "png"])
 
@@ -112,7 +152,8 @@ if uploaded_file:
         )
 
     with st.spinner('🧠 Menganalisis...'):
-        label, confidence = predict_oscc(uploaded_file)
+        # Lewatkan objek model_loaded ke fungsi predict_oscc
+        label, confidence = predict_oscc(uploaded_file, model_loaded)
         time.sleep(1)
 
     st.success('✅ Analisis selesai!')
