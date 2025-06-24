@@ -41,6 +41,14 @@ def download_model():
 # =====================
 # 4. LOAD MODEL DENGAN FIX
 # =====================
+@st.cache_resource
+def load_custom_model():
+    path = download_model()
+    return tf.keras.models.load_model(path)
+
+# INI YANG HARUS DITAMBAHKAN ⬇️
+model = load_custom_model()
+
 def load_custom_model(h5_path):
     with h5py.File(h5_path, "r") as f:
         model_config = f.attrs.get("model_config")
