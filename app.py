@@ -14,7 +14,6 @@ import base64
 from io import BytesIO
 import h5py
 import json
-import model
 
 # =====================
 # 2. KONFIGURASI MODEL
