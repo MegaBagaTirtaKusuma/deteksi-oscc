@@ -5,13 +5,13 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.models import model_from_json
 from tensorflow.keras.preprocessing.image import img_to_array
-from tensorflow.keras.models import load_model
 import time
 import os
 import requests
-from io import BytesIO
 import base64
+from io import BytesIO
 
 # =====================
 # 2. KONFIGURASI MODEL
@@ -26,37 +26,47 @@ MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resn
 # =====================
 def download_model():
     if not os.path.exists(MODEL_PATH):
-        st.warning("🔁 Mengunduh model dari HuggingFace...")
+        st.warning("🔁 Mengunduh model dari Hugging Face...")
         os.makedirs(MODEL_DIR, exist_ok=True)
         response = requests.get(MODEL_URL, stream=True)
-        if response.status_code == 200:
-            with open(MODEL_PATH, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-        else:
-            st.error("❌ Gagal mengunduh model.")
+        with open(MODEL_PATH, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
     return MODEL_PATH
 
 # =====================
-# 4. LOAD MODEL LANGSUNG
+# 4. LOAD MODEL DENGAN FIX
 # =====================
+import h5py
+
+def load_custom_model(h5_path):
+    with h5py.File(h5_path, "r") as f:
+        model_config = f.attrs.get("model_config")
+        if model_config is None:
+            raise ValueError("Model config is missing in HDF5 file.")
+        model_config = model_config.decode("utf-8")
+    model = model_from_json(model_config)
+    model.load_weights(h5_path)
+    return model
+
 @st.cache_resource
 def load_oscc_model():
     try:
         model_path = download_model()
-        model = load_model(model_path)  # ⛔ jangan pakai model_from_json
+        model = load_custom_model(model_path)
         return model
     except Exception as e:
         st.error(f"❌ Gagal memuat model: {str(e)}")
         return None
 
+# Load model
 model = load_oscc_model()
 if model is None:
     st.stop()
 
 # =====================
-# 5. PREDIKSI
+# 5. FUNGSI PREDIKSI
 # =====================
 def predict_oscc(image):
     img = Image.open(image).convert('RGB')
@@ -96,11 +106,12 @@ if uploaded_file:
         time.sleep(1)
 
     st.success('✅ Analisis selesai!')
+
     col1, col2 = st.columns(2)
     with col1:
         st.metric("Hasil", label)
     with col2:
-        st.metric("Tingkat Kepercayaan", f"{confidence * 100:.2f}%")
+        st.metric("Tingkat Kepercayaan", f"{confidence*100:.2f}%")
 
     if label == "KANKER (OSCC)":
         st.warning("⚠️ Terdeteksi kemungkinan OSCC. Disarankan segera konsultasi dengan dokter spesialis.")
@@ -108,7 +119,7 @@ if uploaded_file:
         st.info("✅ Tidak terdeteksi kanker. Tetap periksa secara berkala untuk deteksi dini.")
 
 # =====================
-# 7. RESPONSIVE CSS
+# 7. CSS RESPONSIF
 # =====================
 st.markdown(
     """
