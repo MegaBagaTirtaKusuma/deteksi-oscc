@@ -30,7 +30,7 @@ def download_model():
     model_path = 'model/model_resnet152.h5'
     if not os.path.exists(model_path):
         os.makedirs('model', exist_ok=True)
-        url = 'https://drive.google.com/uc?id=1V50_7ykS-jVoFOCjX1MSrLBMpqfBQJgS'
+        url = 'https://drive.google.com/file/d/1FUG5b7NaQCk-7dSfTK0pxcRb8vDU5UII/view?usp=sharing'
         gdown.download(url, model_path, quiet=False)
     return model_path
 
