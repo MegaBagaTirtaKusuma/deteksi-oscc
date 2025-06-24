@@ -19,7 +19,7 @@ import json
 # 2. KONFIGURASI MODEL
 # =====================
 MODEL_DIR = "model"
-MODEL_FILE = "model_resnet152.h5" # Nama file model setelah diunduh
+MODEL_FILE = "model_resnet152_bs32" # Nama file model setelah diunduh
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 
 # Ganti dengan ID file Google Drive modelmu.
