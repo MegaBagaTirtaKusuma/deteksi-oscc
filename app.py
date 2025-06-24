@@ -147,7 +147,7 @@ if uploaded_file:
     # Tampilkan gambar yang diunggah di tengah kolom
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        st.image(uploaded_file, caption='Gambar yang Diunggah', use_column_width=True)
+        st.image(uploaded_file, caption='Gambar yang Diunggah', use_container_width=True)
     st.write("") # Memberi spasi kosong untuk tampilan yang lebih rapi
 
     # Tombol untuk memulai proses deteksi
