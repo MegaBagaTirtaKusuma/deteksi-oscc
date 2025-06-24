@@ -147,25 +147,28 @@ if uploaded_file:
     # Tampilkan gambar yang diunggah di tengah kolom
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        st.image(uploaded_file, caption='Gambar yang Diunggah', use_container_width=True)
+        st.image(uploaded_file, caption='Gambar yang Diunggah', use_container_width=True) # Menggunakan use_container_width
     st.write("") # Memberi spasi kosong untuk tampilan yang lebih rapi
 
-    # Tombol untuk memulai proses deteksi
-    if st.button("Lakukan Deteksi"):
-        with st.spinner('Menganalisis gambar...'):
-            # Panggil fungsi prediksi
-            label, confidence = predict_oscc(uploaded_file)
-            time.sleep(1) # Memberi sedikit jeda agar animasi spinner terlihat
+    # --- Bagian untuk meratakan tombol "Lakukan Deteksi" ---
+    col_left_button, col_center_button, col_right_button = st.columns([1, 1, 1])
+    with col_center_button:
+        if st.button("Lakukan Deteksi"):
+            with st.spinner('Menganalisis gambar...'):
+                # Panggil fungsi prediksi
+                label, confidence = predict_oscc(uploaded_file)
+                time.sleep(1) # Memberi sedikit jeda agar animasi spinner terlihat
 
-        st.subheader("Hasil Deteksi:")
-        if label == "KANKER (OSCC)":
-            st.error(f"⚠️ **TERDETEKSI: {label}**")
-            st.write(f"Tingkat Keyakinan: **{confidence*100:.2f}%**")
-            st.info("⚠️ Penting: Hasil ini adalah perkiraan. Selalu konsultasikan dengan profesional medis untuk diagnosa dan penanganan yang akurat.")
-        else:
-            st.success(f"✅ **TERDETEKSI: {label}**")
-            st.write(f"Tingkat Keyakinan: **{confidence*100:.2f}%**")
-            st.info("Penting: Terus lakukan pemeriksaan rutin dan jaga kesehatan mulut.")
+            # --- Bagian untuk meratakan hasil deteksi ---
+            st.subheader("Hasil Deteksi:")
+            if label == "KANKER (OSCC)":
+                st.error(f"⚠️ **TERDETEKSI: {label}**")
+                st.write(f"Tingkat Keyakinan: **{confidence*100:.2f}%**")
+                st.info("⚠️ Penting: Hasil ini adalah perkiraan. Selalu konsultasikan dengan profesional medis untuk diagnosa dan penanganan yang akurat.")
+            else:
+                st.success(f"✅ **TERDETEKSI: {label}**")
+                st.write(f"Tingkat Keyakinan: **{confidence*100:.2f}%**")
+                st.info("Penting: Terus lakukan pemeriksaan rutin dan jaga kesehatan mulut.")
 
 # Informasi disclaimer di bagian bawah aplikasi
 st.markdown("---")
