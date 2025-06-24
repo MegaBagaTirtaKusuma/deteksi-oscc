@@ -1,6 +1,3 @@
-# =====================
-# 1. IMPORT LIBRARY
-# =====================
 import streamlit as st
 from PIL import Image
 import numpy as np
@@ -9,7 +6,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 import time
 import os
-import gdown
+import requests
 import base64
 from io import BytesIO
 
@@ -19,21 +16,19 @@ from io import BytesIO
 MODEL_DIR = "model"
 MODEL_FILE = "model_resnet152.h5"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-GDRIVE_URL = "https://drive.google.com/uc?export=download&id=1yk3Fpx9cHU6OVkUga_8entgR_keXo6CU"
-
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/raw/main/model_resnet152.h5"
 
 # =====================
 # 3. UNDUH MODEL
 # =====================
 def download_model():
     if not os.path.exists(MODEL_PATH):
-        st.warning("🔁 Mengunduh model dari Google Drive...")
+        st.warning("🔁 Mengunduh model dari Hugging Face...")
         os.makedirs(MODEL_DIR, exist_ok=True)
-        file_id = "1yk3Fpx9cHU6OVkUga_8entgR_keXo6CU"
-        gdown.download(id=file_id, output=MODEL_PATH, quiet=False)
-        
+        response = requests.get(MODEL_URL)
+        with open(MODEL_PATH, "wb") as f:
+            f.write(response.content)
     return MODEL_PATH
-
 
 # =====================
 # 4. LOAD MODEL
@@ -48,6 +43,7 @@ def load_oscc_model():
         st.error(f"❌ Gagal memuat model: {str(e)}")
         return None
 
+# Load model
 model = load_oscc_model()
 if model is None:
     st.stop()
