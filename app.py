@@ -19,7 +19,8 @@ from io import BytesIO
 MODEL_DIR = "model"
 MODEL_FILE = "model_resnet152.h5"
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
-GDRIVE_URL = "https://drive.google.com/file/d/1yk3Fpx9cHU6OVkUga_8entgR_keXo6CU"
+GDRIVE_URL = "https://drive.google.com/uc?id=1yk3Fpx9cHU6OVkUga_8entgR_keXo6CU"
+
 
 # =====================
 # 3. UNDUH MODEL
