@@ -110,7 +110,7 @@ if uploaded_file:
         )
 
     with st.spinner('🧠 Menganalisis...'):
-        label, confidence = predict_oscc(uploaded_file)
+        label, confidence = predict_oscc(uploaded_file, model)
         time.sleep(1)
 
     st.success('✅ Analisis selesai!')
