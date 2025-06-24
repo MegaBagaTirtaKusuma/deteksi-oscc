@@ -7,11 +7,12 @@ import os
 import requests
 
 # =====================
-# 2. KONFIGURASI MODEL UNTUK .KERAS
+# 2. KONFIGURASI MODEL UNTUK H5
 # =====================
-MODEL_DIR = "model_keras" # Direktori terpisah untuk contoh ini
-MODEL_FILE = "model_resnet152_bs8.keras" # Ekstensi .keras untuk format native Keras v3
+MODEL_DIR = "model_h5" # Direktori terpisah untuk contoh ini
+MODEL_FILE = "model_resnet152.h5" # Ekstensi .h5 untuk format HDF5
 MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
+# Menggunakan URL model yang sama, tetapi akan disimpan sebagai .h5
 MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs8.keras"
 
 
@@ -19,77 +20,77 @@ MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resn
 # 3. FUNGSI UNDUH MODEL
 # =====================
 @st.cache_resource
-def download_model_keras():
+def download_model_h5():
     """
-    Downloads the model file from the specified URL and saves it as .keras.
+    Downloads the model file from the specified URL and saves it as .h5.
     Caches the download result to prevent re-downloading.
     """
     if not os.path.exists(MODEL_PATH):
-        st.warning(f"🔁 Mengunduh model Keras native dari Hugging Face ke {MODEL_PATH}...")
+        st.warning(f"🔁 Mengunduh model HDF5 dari Hugging Face ke {MODEL_PATH}...")
         os.makedirs(MODEL_DIR, exist_ok=True)
         try:
             response = requests.get(MODEL_URL, stream=True)
             response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
-            with open(MODEL_PATH, 'wb') as f: # Save with .keras extension
+            with open(MODEL_PATH, 'wb') as f: # Save with .h5 extension
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
-            st.success("✅ Model Keras native berhasil diunduh!")
+            st.success("✅ Model HDF5 berhasil diunduh!")
         except requests.exceptions.RequestException as e:
-            st.error(f"❌ Gagal mengunduh model Keras native: {e}. Pastikan URL benar dan ada koneksi internet.")
+            st.error(f"❌ Gagal mengunduh model HDF5: {e}. Pastikan URL benar dan ada koneksi internet.")
             return None
     else:
-        st.info("Model Keras native sudah tersedia secara lokal.")
+        st.info("Model HDF5 sudah tersedia secara lokal.")
     return MODEL_PATH
 
 # =====================
-# 4. FUNGSI MUAT MODEL .KERAS
+# 4. FUNGSI MUAT MODEL H5
 # =====================
 @st.cache_resource
-def load_and_cache_model_keras(model_path):
+def load_and_cache_model_h5(model_path):
     """
-    Loads and caches the .keras model using tf.keras.models.load_model.
+    Loads and caches the HDF5 model using tf.keras.models.load_model.
     """
     if model_path is None:
         st.error("Tidak dapat memuat model karena file model tidak ditemukan atau unduhan gagal.")
         return None
 
-    st.info("🧠 Memuat model Keras native... ini mungkin memerlukan waktu beberapa detik.")
+    st.info("🧠 Memuat model HDF5... ini mungkin memerlukan waktu beberapa detik.")
     try:
-        # tf.keras.models.load_model can load .keras (zip archive) format
+        # tf.keras.models.load_model can load .h5 (HDF5) format
         model = tf.keras.models.load_model(model_path)
-        st.success("✅ Model Keras native berhasil dimuat!")
+        st.success("✅ Model HDF5 berhasil dimuat!")
         return model
     except Exception as e:
-        st.error(f"❌ Gagal memuat model Keras native: {e}")
+        st.error(f"❌ Gagal memuat model HDF5: {e}")
         st.error("Pastikan file model tidak valid atau rusak, atau versi TensorFlow/Keras Anda tidak kompatibel.")
-        st.error("Rekomendasi: Pastikan Anda menggunakan TensorFlow 2.10 atau yang lebih baru. Coba hapus folder 'model_keras' dan jalankan ulang.")
+        st.error("Rekomendasi: Coba hapus folder 'model_h5' dan jalankan ulang.")
         return None
 
-# --- GLOBAL MODEL LOADING (.KERAS) ---
-downloaded_model_path_keras = download_model_keras()
-model_keras = load_and_cache_model_keras(downloaded_model_path_keras)
+# --- GLOBAL MODEL LOADING (H5) ---
+downloaded_model_path_h5 = download_model_h5()
+model_h5 = load_and_cache_model_h5(downloaded_model_path_h5)
 
 
 # =====================
 # 5. UI UTAMA
 # =====================
-st.markdown("<h2 style='text-align: center;'>Contoh Pemuatan Model Keras (.keras)</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center;'>Ini menunjukkan cara memuat model yang disimpan dalam format native Keras (.keras).</p>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center;'>Contoh Pemuatan Model Keras (.h5)</h2>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Ini menunjukkan cara memuat model yang disimpan dalam format HDF5 (.h5).</p>", unsafe_allow_html=True)
 
-if model_keras:
-    st.success("Model .keras siap digunakan!")
-    st.write("Anda sekarang dapat melanjutkan dengan prediksi atau operasi lain menggunakan `model_keras`.")
+if model_h5:
+    st.success("Model .h5 siap digunakan!")
+    st.write("Anda sekarang dapat melanjutkan dengan prediksi atau operasi lain menggunakan `model_h5`.")
 else:
-    st.error("Model .keras gagal dimuat. Harap periksa pesan kesalahan di atas.")
+    st.error("Model .h5 gagal dimuat. Harap periksa pesan kesalahan di atas.")
 
 # Contoh sederhana penggunaan (hanya untuk menunjukkan model dimuat)
-if st.button("Tampilkan Ringkasan Model .keras"):
-    if model_keras:
-        st.text("Ringkasan Model .keras:")
-        model_keras.summary(print_fn=lambda x: st.text(x))
+if st.button("Tampilkan Ringkasan Model H5"):
+    if model_h5:
+        st.text("Ringkasan Model H5:")
+        model_h5.summary(print_fn=lambda x: st.text(x))
     else:
-        st.warning("Model .keras belum dimuat.")
+        st.warning("Model H5 belum dimuat.")
 
 # CSS responsif (sama seperti sebelumnya)
 st.markdown(
