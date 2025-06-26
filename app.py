@@ -111,27 +111,28 @@ model = load_oscc_model(downloaded_model_path)
 # =====================
 def predict_oscc(image_file):
     """
-    Melakukan prediksi apakah gambar mukosa oral mengandung KANKER (OSCC) atau NORMAL.
+    Melakukan prediksi dengan preprocessing yang BENAR.
     """
-    # Buka gambar menggunakan PIL dan konversi ke RGB (ResNet biasanya expects 3 channel)
     img = Image.open(image_file).convert('RGB')
-    # Resize gambar ke ukuran input yang diharapkan model (224x224 untuk ResNet)
     img = img.resize((224, 224))
-    # Konversi gambar ke array NumPy dan normalisasi nilai piksel ke rentang 0-1
-    img_array = img_to_array(img) / 255.0
-    # Tambahkan dimensi batch. Model berharap input berbentuk (batch_size, height, width, channels)
-    img_array = np.expand_dims(img_array, axis=0) 
     
-    # Lakukan prediksi menggunakan model
-    prediction = model.predict(img_array)
-    # Ambil probabilitas untuk kelas positif (kanker), asumsi model output 1 nilai
-    probability = prediction[0][0] 
+    # Konversi ke array, jangan dibagi 255 dulu
+    img_array = tf.keras.preprocessing.image.img_to_array(img)
     
-    # Tentukan label dan tingkat keyakinan berdasarkan threshold 0.5
+    # Tambahkan dimensi batch
+    img_array = np.expand_dims(img_array, axis=0)
+    
+    # <<< PERBAIKAN UTAMA DI SINI >>>
+    # Gunakan fungsi preprocessing yang sama dengan saat training
+    img_preprocessed = tf.keras.applications.resnet.preprocess_input(img_array)
+    
+    # Lakukan prediksi pada gambar yang sudah diproses dengan benar
+    prediction = model.predict(img_preprocessed)
+    probability = prediction[0][0]
+    
     if probability > 0.5:
         return "KANKER (OSCC)", float(probability)
     else:
-        # Jika bukan kanker, probabilitasnya adalah 1 - probabilitas kanker
         return "NORMAL", float(1 - probability)
 
 # =====================
