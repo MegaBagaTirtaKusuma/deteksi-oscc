@@ -28,7 +28,7 @@ MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILE)
 
 # URL unduhan langsung model dari Hugging Face Hub
 # Ini adalah URL yang kamu berikan: bagastk/deteksi-oscc/resolve/main/model_resnet152_bs32.keras
-MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/OSCC_deteksi_152.keras"
+MODEL_URL = "https://huggingface.co/bagastk/deteksi-oscc/resolve/main/model_resnet152_bs32.keras"
 
 # =====================
 # 3. FUNGSI UNDUH MODEL
