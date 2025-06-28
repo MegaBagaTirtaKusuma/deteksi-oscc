@@ -87,21 +87,18 @@ downloaded_model_path = download_model_from_huggingface()
 # =====================
 # 4. FUNGSI MUAT MODEL
 # =====================
-@st.cache_resource # Dekorator ini memastikan model hanya dimuat sekali saja
+@st.cache_resource 
 def load_oscc_model(model_path):
     """
     Memuat model Keras dari file .keras yang sudah diunduh.
     """
-    st.info("⏳ Memuat model, mohon tunggu sebentar...")
     try:
-        # load_model dari TensorFlow/Keras secara otomatis menangani format .keras
         model = load_model(model_path)
-        st.success("✅ Model berhasil dimuat!")
         return model
     except Exception as e:
         st.error(f"❌ Error memuat model: {e}")
         st.info("Pastikan file model .keras tidak korup dan versi TensorFlow/Keras yang digunakan kompatibel. Coba hapus file model di folder 'model' dan jalankan ulang.")
-        st.stop() # Hentikan eksekusi jika model gagal dimuat
+        st.stop()
 
 # --- Panggil fungsi muat model setelah model dipastikan sudah diunduh ---
 model = load_oscc_model(downloaded_model_path)
